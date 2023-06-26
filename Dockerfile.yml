@@ -1,0 +1,30 @@
+# Используем базовый образ Python
+FROM python:3.9
+
+# Устанавливаем переменную окружения PYTHONUNBUFFERED на 1
+ENV PYTHONUNBUFFERED=1
+
+# Устанавливаем рабочую директорию внутри контейнера
+WORKDIR /app
+
+# Копируем файлы зависимостей в контейнер
+COPY poetry.lock pyproject.toml /app/
+
+# Устанавливаем менеджер зависимостей poetry
+RUN pip install poetry
+
+# Устанавливаем зависимости проекта
+RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi
+
+# Копируем остальные файлы проекта в контейнер
+COPY . /app/
+
+# Запускаем миграции и собираем статические файлы
+RUN python manage.py migrate
+RUN python manage.py collectstatic --no-input
+
+# Открываем порт 8000 для внешнего доступа
+EXPOSE 8000
+
+# Запускаем сервер Django
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
